@@ -258,6 +258,20 @@ namespace Tebex.HeadlessAPI
                     onSuccess.Invoke((TReturnType)emptyBasketLinks);
                     return;
                 }
+
+                // A basket without links is improperly returned as an empty array instead of an object, handle explicitly
+                if ((typeof(TReturnType) == typeof(WrappedBasket) || typeof(TReturnType) == typeof(Basket)) && body.Contains("\"links\":[]"))
+                {
+                    body = body.Replace("\"links\":[]", "\"links\":{}");
+                    var basket = JsonConvert.DeserializeObject<TReturnType>(body);
+                    if (basket == null)
+                    {
+                        throw new JsonSerializationException("Response body was null, expected JSON");
+                    }
+                    
+                    onSuccess.Invoke(basket);
+                    return;
+                }
                 
                 var response = JsonConvert.DeserializeObject<TReturnType>(body);
                 if (response == null)

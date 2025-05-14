@@ -31,6 +31,9 @@ namespace Tebex.HeadlessAPI
 
         [JsonProperty("packages")]
         public List<Package> Packages { get; private set; } = new List<Package>();
+        
+        [JsonProperty("active_tier", NullValueHandling = NullValueHandling.Ignore)] 
+        public Tier? ActiveTier { get; private set; }
     }
 
     /// <summary>

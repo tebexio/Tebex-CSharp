@@ -29,6 +29,9 @@ namespace Tebex.HeadlessAPI
         [JsonProperty("display_type")]
         public string DisplayType { get; private set; } = string.Empty;
 
+        [JsonProperty("tiered")]
+        public bool Tiered { get; private set; } = false;
+        
         [JsonProperty("packages")]
         public List<Package> Packages { get; private set; } = new List<Package>();
         

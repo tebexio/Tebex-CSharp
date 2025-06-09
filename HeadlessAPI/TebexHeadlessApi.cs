@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Tebex.Common;
@@ -11,7 +12,8 @@ namespace Tebex.HeadlessAPI
     public class TebexHeadlessApi
     {
         private static readonly string HeadlessApiBase = "https://headless.tebex.io/api/";
-        private string PublicToken { get; set; } = string.Empty;
+        internal string PublicToken { get; set; } = string.Empty;
+        internal string PrivateKey { get; set; } = string.Empty;
         
         private HeadlessAdapter _adapter;
         private Webstore? _store;
@@ -33,6 +35,7 @@ namespace Tebex.HeadlessAPI
                 _adapter = adapter
             };
             api.SetStoreToken(publicToken);
+            adapter.SetApiInstance(api);
             return api;
         }
         
@@ -47,6 +50,15 @@ namespace Tebex.HeadlessAPI
         }
 
         /// <summary>
+        /// Sets the current private key used for authenticated API requests.
+        /// </summary>
+        /// <param name="key"></param>
+        public void SetPrivateKey(string key)
+        {
+            PrivateKey = key;
+        }
+        
+        /// <summary>
         /// Sends an HTTP request to a specified endpoint using the given parameters and invokes appropriate callbacks based on the response.
         /// </summary>
         /// <param name="endpoint">The API endpoint to which the request will be sent.</param>
@@ -55,13 +67,14 @@ namespace Tebex.HeadlessAPI
         /// <param name="onSuccess">The callback invoked on a successful response, containing the HTTP status code and response body.</param>
         /// <param name="onHeadlessApiError">The callback invoked when a headless API-specific error occurs.</param>
         /// <param name="onServerError">The callback invoked when an unknown/server error occurs.</param>
+        /// <param name="authenticated">True if we should use an authenticated call (HTTP Basic, will require public key and private key to be set</param>
         /// <typeparam name="TReturnType">The type of the object to be deserialized from the response.</typeparam>
         /// <returns>A task representing the asynchronous operation of sending the HTTP request.</returns>
         private Task Send<TReturnType>(string endpoint, string body, HttpVerb method, ApiSuccessCallback onSuccess,
-            Action<HeadlessApiError> onHeadlessApiError, Action<ServerError> onServerError)
+            Action<HeadlessApiError> onHeadlessApiError, Action<ServerError> onServerError, bool authenticated = false)
         {
             return _adapter.Send<TReturnType>(HeadlessApiBase + endpoint, body, method, onSuccess, onHeadlessApiError,
-                onServerError);
+                onServerError, authenticated);
         }
 
         /// <summary>
@@ -74,7 +87,7 @@ namespace Tebex.HeadlessAPI
         public Task GetWebstore(Action<Webstore> onSuccess, Action<HeadlessApiError> onApiError,
             Action<ServerError> onServerError)
         {
-            return SendRequestAsync("accounts/" + PublicToken, onSuccess, onApiError, onServerError);
+            return GetRequestAsync("accounts/" + PublicToken, onSuccess, onApiError, onServerError);
         }
 
         /// <summary>
@@ -87,7 +100,7 @@ namespace Tebex.HeadlessAPI
         public Task GetAllPackages(Action<WrappedPackages> onSuccess, Action<HeadlessApiError> onApiError,
             Action<ServerError> onServerError)
         {
-            return SendRequestAsync("accounts/" + PublicToken + "/packages", onSuccess, onApiError, onServerError);
+            return GetRequestAsync("accounts/" + PublicToken + "/packages", onSuccess, onApiError, onServerError);
         }
 
         /// <summary>
@@ -101,48 +114,77 @@ namespace Tebex.HeadlessAPI
         public Task GetPackage(int packageId, Action<WrappedPackage> onSuccess, Action<HeadlessApiError> onApiError,
             Action<ServerError> onServerError)
         {
-            return SendRequestAsync("accounts/" + PublicToken + "/packages/" + packageId, onSuccess, onApiError, onServerError);
+            return GetRequestAsync("accounts/" + PublicToken + "/packages/" + packageId, onSuccess, onApiError, onServerError);
         }
 
         public Task GetPackage(int packageId, string basketIdent, Action<WrappedPackage> onSuccess,
             Action<HeadlessApiError> onApiError, Action<ServerError> onServerError)
         {
-            return SendRequestAsync("accounts/" + PublicToken + "/packages/" + packageId + "?basketIdent=" + basketIdent, onSuccess, onApiError, onServerError);
+            return GetRequestAsync("accounts/" + PublicToken + "/packages/" + packageId + "?basketIdent=" + basketIdent, onSuccess, onApiError, onServerError);
         }
         
         public Task GetPackage(int packageId, string ipAddress, string basketIdent, Action<WrappedPackage> onSuccess,
             Action<HeadlessApiError> onApiError, Action<ServerError> onServerError)
         {
-            return SendRequestAsync("accounts/" + PublicToken + "/packages/" + packageId + "?basketIdent=" + basketIdent + "&ipAddress=" + ipAddress, onSuccess, onApiError, onServerError);
+            return GetRequestAsync("accounts/" + PublicToken + "/packages/" + packageId + "?basketIdent=" + basketIdent + "&ipAddress=" + ipAddress, onSuccess, onApiError, onServerError);
         }
 
         public Task GetAllCategories(Action<WrappedCategories> onSuccess, Action<HeadlessApiError> onApiError,
             Action<ServerError> onServerError)
         {
-            return SendRequestAsync("accounts/" + PublicToken + "/categories", onSuccess, onApiError, onServerError);
+            return GetRequestAsync("accounts/" + PublicToken + "/categories", onSuccess, onApiError, onServerError);
         }
         
         public Task GetAllCategoriesIncludingPackages(Action<WrappedCategories> onSuccess, Action<HeadlessApiError> onApiError,
             Action<ServerError> onServerError)
         {
-            return SendRequestAsync("accounts/" + PublicToken + "/categories?includePackages=1", onSuccess, onApiError, onServerError);
+            return GetRequestAsync("accounts/" + PublicToken + "/categories?includePackages=1", onSuccess, onApiError, onServerError);
         }
         
         public Task GetCategory(int categoryId, Action<WrappedCategory> onSuccess, Action<HeadlessApiError> onApiError,
             Action<ServerError> onServerError)
         {
-            return SendRequestAsync("accounts/" + PublicToken + "/categories/" + categoryId, onSuccess, onApiError, onServerError);
+            return GetRequestAsync("accounts/" + PublicToken + "/categories/" + categoryId, onSuccess, onApiError, onServerError);
         }
         
         public Task GetCategoryIncludingPackages(int categoryId, Action<WrappedCategory> onSuccess,
             Action<HeadlessApiError> onApiError, Action<ServerError> onServerError)
         {
-            return SendRequestAsync("accounts/" + PublicToken + "/categories/" + categoryId + "?includePackages=1", onSuccess, onApiError, onServerError);
+            return GetRequestAsync("accounts/" + PublicToken + "/categories/" + categoryId + "?includePackages=1", onSuccess, onApiError, onServerError);
+        }
+
+        public Task GetTieredCategories(Action<List<Category>> onSuccess, Action<HeadlessApiError> onApiError, Action<ServerError> onServerError)
+        {
+            return GetAllCategories(categories =>
+            {
+                List<Category> tieredCategories = new List<Category>();
+                foreach(Category category in categories.Data)
+                {
+                    if (category.Tiered)
+                    {
+                        tieredCategories.Add(category);    
+                    }
+                }
+                onSuccess.Invoke(tieredCategories);
+            }, onApiError, onServerError);
+        }
+        
+        public Task GetTieredCategoriesForUser(long usernameId, Action<WrappedCategories> onSuccess,
+            Action<HeadlessApiError> onApiError, Action<ServerError> onServerError)
+        {
+            return GetRequestAsyncAuthenticated("accounts/" + PublicToken + "/categories?usernameId=" + usernameId, onSuccess, onApiError, onServerError);
+        }
+
+        public Task UpdateTier(int tierId, int packageId, Action<TierUpgradeResponse> onSuccess, Action<HeadlessApiError> onApiError,
+            Action<ServerError> onServerError)
+        {
+            var payload = new UpdateTierPayload(packageId);
+            return PatchRequestAsyncAuthenticated("accounts/" + PublicToken + "/tiers/" + tierId, JsonConvert.SerializeObject(payload), onSuccess, onApiError, onServerError);
         }
         
         public Task GetBasket(string basketIdent, Action<WrappedBasket> onSuccess, Action<HeadlessApiError> onApiError, Action<ServerError> onServerError)
         {
-            return SendRequestAsync("accounts/" + PublicToken + "/baskets/" + basketIdent, onSuccess, onApiError, onServerError);
+            return GetRequestAsync("accounts/" + PublicToken + "/baskets/" + basketIdent, onSuccess, onApiError, onServerError);
         }
 
         public Task CreateBasket(CreateBasketPayload basketPayload, Action<WrappedBasket> onSuccess, Action<HeadlessApiError> onApiError,
@@ -167,7 +209,7 @@ namespace Tebex.HeadlessAPI
         public Task GetBasketAuthLinks(string basketIdent, string returnUrl, Action<WrappedBasketLinks> onSuccess,
             Action<HeadlessApiError> onApiError, Action<ServerError> onServerError)
         {
-            return SendRequestAsync("accounts/" + PublicToken + "/baskets/" + basketIdent + "/auth?returnUrl=" + returnUrl, onSuccess, onApiError, onServerError);
+            return GetRequestAsync("accounts/" + PublicToken + "/baskets/" + basketIdent + "/auth?returnUrl=" + returnUrl, onSuccess, onApiError, onServerError);
         }
         
         public Task RemovePackageFromBasket(string basketIdent, int packageId, Action<WrappedBasket> onSuccess,
@@ -218,13 +260,22 @@ namespace Tebex.HeadlessAPI
             return PostRequestAsync("accounts/" + PublicToken + "/baskets/" + basketIdent + "/coupons/remove", JsonConvert.SerializeObject(coupon), onSuccess, onApiError, onServerError);
         }
         
-        private Task SendRequestAsync<T>(string endpoint, Action<T> onSuccess, Action<HeadlessApiError> onApiError, Action<ServerError> onServerError)
+        private Task GetRequestAsync<T>(string endpoint, Action<T> onSuccess, Action<HeadlessApiError> onApiError, Action<ServerError> onServerError)
         {
             _adapter.LogDebug("-> GET " + endpoint);
             return Send<T>(endpoint, "", HttpVerb.GET, (code, body) =>
             {
                 HandleResponse(endpoint, body, onSuccess, onApiError, onServerError, code);
             }, onApiError.Invoke, onServerError.Invoke);
+        }
+        
+        private Task GetRequestAsyncAuthenticated<T>(string endpoint, Action<T> onSuccess, Action<HeadlessApiError> onApiError, Action<ServerError> onServerError)
+        {
+            _adapter.LogDebug("-> GET " + endpoint);
+            return Send<T>(endpoint, "", HttpVerb.GET, (code, body) =>
+            {
+                HandleResponse(endpoint, body, onSuccess, onApiError, onServerError, code);
+            }, onApiError.Invoke, onServerError.Invoke, true);
         }
         
         private Task PostRequestAsync<T>(string endpoint, string data, Action<T> onSuccess, Action<HeadlessApiError> onApiError, Action<ServerError> onServerError)
@@ -234,6 +285,15 @@ namespace Tebex.HeadlessAPI
             {
                 HandleResponse(endpoint, body, onSuccess, onApiError, onServerError, code);
             }, onApiError.Invoke, onServerError.Invoke);
+        }
+        
+        private Task PatchRequestAsyncAuthenticated<T>(string endpoint, string data, Action<T> onSuccess, Action<HeadlessApiError> onApiError, Action<ServerError> onServerError)
+        {
+            _adapter.LogDebug("-> PATCH " + endpoint + " | " + data);
+            return Send<T>(endpoint, data, HttpVerb.PATCH, (code, body) =>
+            {
+                HandleResponse(endpoint, body, onSuccess, onApiError, onServerError, code);
+            }, onApiError.Invoke, onServerError.Invoke, true);
         }
         
         private Task PutRequestAsync<TReturnType>(string endpoint, string data, Action<TReturnType> onSuccess, Action<HeadlessApiError> onApiError, Action<ServerError> onServerError)

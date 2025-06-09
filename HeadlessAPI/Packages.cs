@@ -34,7 +34,16 @@ namespace Tebex.HeadlessAPI
         [JsonProperty("currency")]
         public string Currency { get; private set; } = string.Empty;
 
-        [JsonProperty("discount")]
+        /// <summary>
+        /// The difference in upgrade pricing from the current active tier.
+        ///
+        /// This is only present if this package is part of a tiered category,
+        /// and we are querying against a particular usernameId.
+        /// </summary>
+        [JsonProperty("prorate_price", NullValueHandling = NullValueHandling.Ignore)]
+        public float ProratePrice { get; private set; }
+        
+        [JsonProperty("discount", NullValueHandling = NullValueHandling.Ignore)]
         public float Discount { get; private set; }
 
         [JsonProperty("disable_quantity")]

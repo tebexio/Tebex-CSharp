@@ -27,6 +27,20 @@ namespace Tebex.HeadlessAPI
     }
     
     /// <summary>
+    /// Request data for updating a tier.
+    /// </summary>
+    public class UpdateTierPayload
+    {
+        [JsonProperty("package_id", Required = Required.Always)]
+        public int PackageId { get; private set; }
+
+        public UpdateTierPayload(int packageId)
+        {
+            PackageId = packageId;
+        }
+    }
+    
+    /// <summary>
     /// Request data for creating a basket.
     /// </summary>
     public class CreateBasketPayload

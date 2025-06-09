@@ -11,9 +11,10 @@ namespace Tebex.HeadlessAPI
     /// </summary>
     public class SystemHeadlessAdapter : HeadlessAdapter
     {
-        public override Task Send<T>(string url, string body, HttpVerb verb, ApiSuccessCallback onSuccess, Action<HeadlessApiError> onHeadlessApiError, Action<ServerError> onServerError)
+        public override Task Send<T>(string url, string body, HttpVerb verb, ApiSuccessCallback onSuccess, Action<HeadlessApiError> onHeadlessApiError, Action<ServerError> onServerError, bool authenticated = false)
         {
             var client = new HttpClient();
+
             var request = new HttpRequestMessage()
             {
                 RequestUri = new Uri(url),
@@ -21,6 +22,12 @@ namespace Tebex.HeadlessAPI
                 Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json")
             };
 
+            if (authenticated)
+            {
+                var credentials = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes($"{_apiInstance.PublicToken}:{_apiInstance.PrivateKey}"));
+                request.Headers.Add("Authorization", $"Basic {credentials}");
+            }
+            
             try
             {
                 return client.SendAsync(request).ContinueWith(responseTask =>

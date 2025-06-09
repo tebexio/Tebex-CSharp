@@ -12,6 +12,12 @@ namespace Tebex.HeadlessAPI
     /// </summary>
     public abstract class HeadlessAdapter
     {
+        internal TebexHeadlessApi _apiInstance;
+        internal void SetApiInstance(TebexHeadlessApi apiInstance)
+        {
+            _apiInstance = apiInstance;
+        }
+        
         /// <summary>
         /// Sends an HTTP request to the specified URL with the given parameters and handles the response using the provided callbacks.
         /// </summary>
@@ -22,9 +28,10 @@ namespace Tebex.HeadlessAPI
         /// <param name="onSuccess">Callback executed when the request is successful. Receives the response code and body as parameters.</param>
         /// <param name="onHeadlessApiError">Callback executed when there is a client-side error specific to the Headless API.</param>
         /// <param name="onServerError">Callback executed when the server responds with an error such as 500 Internal Server Error.</param>
+        /// <param name="authenticated">True if we should use an authenticated call (HTTP Basic, will require public key and private key to be set</param>
         /// <returns>An asynchronous task for the process of sending the HTTP request and handling the response.</returns>
         public abstract Task Send<TReturnType>(string url, string body, HttpVerb verb, ApiSuccessCallback onSuccess,
-            Action<HeadlessApiError> onHeadlessApiError, Action<ServerError> onServerError);
+            Action<HeadlessApiError> onHeadlessApiError, Action<ServerError> onServerError, bool authenticated = false);
 
         public abstract void LogApiError(HeadlessApiError error);
 

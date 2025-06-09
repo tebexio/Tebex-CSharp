@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Tebex.Common;
@@ -152,6 +153,22 @@ namespace Tebex.HeadlessAPI
             return GetRequestAsync("accounts/" + PublicToken + "/categories/" + categoryId + "?includePackages=1", onSuccess, onApiError, onServerError);
         }
 
+        public Task GetTieredCategories(Action<List<Category>> onSuccess, Action<HeadlessApiError> onApiError, Action<ServerError> onServerError)
+        {
+            return GetAllCategories(categories =>
+            {
+                List<Category> tieredCategories = new List<Category>();
+                foreach(Category category in categories.Data)
+                {
+                    if (category.Tiered)
+                    {
+                        tieredCategories.Add(category);    
+                    }
+                }
+                onSuccess.Invoke(tieredCategories);
+            }, onApiError, onServerError);
+        }
+        
         public Task GetTieredCategoriesForUser(long usernameId, Action<WrappedCategories> onSuccess,
             Action<HeadlessApiError> onApiError, Action<ServerError> onServerError)
         {

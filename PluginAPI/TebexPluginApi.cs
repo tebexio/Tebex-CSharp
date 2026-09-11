@@ -189,7 +189,7 @@ namespace Tebex.PluginAPI
         /// </summary>
         public Task GetAllPaymentsPaginated(int pageNumber, Action<PaginatedPaymentInfo> onSuccess, Action<PluginApiError> onPluginApiError, Action<ServerError> onServerError)
         {
-            return Send($"payments?paged={pageNumber}", "", HttpVerb.GET, onSuccess, onPluginApiError, onServerError);
+            return Send($"payments?paged=1&page={pageNumber}", "", HttpVerb.GET, onSuccess, onPluginApiError, onServerError);
         }
 
         /// <summary>
